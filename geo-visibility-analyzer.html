@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Brand AI Visibility Analyzer</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.9.0/dist/tabler-icons.min.css" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #ffffff;
+    --bg-secondary: #f5f5f3;
+    --bg-tertiary: #ededea;
+    --text-primary: #1a1a1a;
+    --text-secondary: #666662;
+    --text-tertiary: #999994;
+    --border: rgba(0,0,0,0.12);
+    --border-md: rgba(0,0,0,0.22);
+    --accent: #185FA5;
+    --accent-bg: #E6F1FB;
+    --accent-text: #0C447C;
+    --success: #0F6E56;
+    --success-bg: #E1F5EE;
+    --warning: #854F0B;
+    --warning-bg: #FAEEDA;
+    --danger: #A32D2D;
+    --danger-bg: #FCEBEB;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1a;
+      --bg-secondary: #252523;
+      --bg-tertiary: #2e2e2b;
+      --text-primary: #f0ede8;
+      --text-secondary: #a09d97;
+      --text-tertiary: #6b6864;
+      --border: rgba(255,255,255,0.1);
+      --border-md: rgba(255,255,255,0.2);
+      --accent: #378ADD;
+      --accent-bg: #042C53;
+      --accent-text: #85B7EB;
+      --success: #5DCAA5;
+      --success-bg: #04342C;
+      --warning: #EF9F27;
+      --warning-bg: #412402;
+      --danger: #F09595;
+      --danger-bg: #501313;
+    }
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 2rem 1rem;
+  }
+
+  .container {
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  .header { margin-bottom: 1.5rem; }
+  .header h1 {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .header p { font-size: 14px; color: var(--text-secondary); margin-top: 5px; }
+
+  .card {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  @media (max-width: 480px) { .input-row { grid-template-columns: 1fr; } }
+
+  .input-group label { font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 5px; }
+  .input-group input {
+    width: 100%;
+    padding: 8px 10px;
+    border: 0.5px solid var(--border-md);
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 14px;
+    font-family: var(--font);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .input-group input:focus { border-color: var(--accent); }
+
+  .platform-row { margin-bottom: 14px; }
+  .platform-row label { font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 6px; }
+  .platform-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 0.5px solid var(--border-md);
+    color: var(--text-secondary);
+    background: var(--bg);
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .chip.active {
+    background: var(--accent-bg);
+    color: var(--accent-text);
+    border-color: var(--accent);
+  }
+
+  .analyze-btn {
+    width: 100%;
+    padding: 11px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: var(--radius-md);
+    border: 0.5px solid var(--border-md);
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: var(--font);
+    transition: background 0.15s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .analyze-btn:hover { background: var(--bg-secondary); }
+  .analyze-btn:active { transform: scale(0.99); }
+  .analyze-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .error-msg {
+    display: none;
+    font-size: 13px;
+    color: var(--danger);
+    background: var(--danger-bg);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    margin-bottom: 1rem;
+  }
+  .error-msg.visible { display: block; }
+
+  .loading-state {
+    display: none;
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-secondary);
+    font-size: 14px;
+  }
+  .loading-state.visible { display: block; }
+  .spinner {
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    border: 2px solid var(--border-md);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .results { display: none; }
+  .results.visible { display: block; }
+
+  .score-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 1rem;
+  }
+  @media (max-width: 480px) { .score-row { grid-template-columns: repeat(2, 1fr); } }
+
+  .metric {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    text-align: center;
+  }
+  .metric .val { font-size: 22px; font-weight: 600; color: var(--text-primary); }
+  .metric .lbl { font-size: 11px; color: var(--text-secondary); margin-top: 3px; }
+
+  .section-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .platform-result { margin-bottom: 14px; padding-bottom: 14px; border-bottom: 0.5px solid var(--border); }
+  .platform-result:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+  .plat-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .plat-name { font-size: 13px; font-weight: 500; }
+  .score-badge { font-size: 11px; padding: 2px 8px; border-radius: 20px; }
+  .score-high { background: var(--success-bg); color: var(--success); }
+  .score-mid { background: var(--warning-bg); color: var(--warning); }
+  .score-low { background: var(--danger-bg); color: var(--danger); }
+
+  .bar-wrap { display: flex; align-items: center; gap: 8px; margin-top: 5px; }
+  .bar-bg { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 2px; }
+  .bar-val { font-size: 11px; color: var(--text-tertiary); min-width: 30px; text-align: right; }
+
+  .plat-quote {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    font-style: italic;
+    background: var(--bg-secondary);
+    padding: 8px 10px;
+    border-radius: var(--radius-md);
+    border-left: 2px solid var(--border-md);
+    margin-top: 8px;
+  }
+
+  .gap-item { display: flex; align-items: flex-start; gap: 8px; padding: 9px 0; border-bottom: 0.5px solid var(--border); }
+  .gap-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .gap-tag { font-size: 11px; padding: 2px 8px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; margin-top: 1px; }
+  .gap-content { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+
+  .fix-item { display: flex; gap: 10px; align-items: flex-start; padding: 9px 0; border-bottom: 0.5px solid var(--border); }
+  .fix-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .fix-num {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--accent-bg); color: var(--accent-text);
+    font-size: 11px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 2px;
+  }
+  .fix-text { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+  .fix-text strong { color: var(--text-primary); font-weight: 500; }
+
+  .built-by {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 0.5px solid var(--border);
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <h1><i class="ti ti-antenna-bars-5" aria-hidden="true"></i> Brand AI Visibility Analyzer</h1>
+    <p>See how AI platforms mention your brand — and where competitors beat you.</p>
+  </div>
+
+  <div class="card">
+    <div class="input-row">
+      <div class="input-group">
+        <label for="brand-input">Brand name</label>
+        <input type="text" id="brand-input" placeholder="e.g. Notion, Stripe, Figma" />
+      </div>
+      <div class="input-group">
+        <label for="topic-input">Topic or query</label>
+        <input type="text" id="topic-input" placeholder="e.g. project management tools" />
+      </div>
+    </div>
+
+    <div class="platform-row">
+      <label>AI platforms to scan</label>
+      <div class="platform-chips" id="chips">
+        <span class="chip active" data-val="ChatGPT">ChatGPT</span>
+        <span class="chip active" data-val="Gemini">Gemini</span>
+        <span class="chip active" data-val="Claude">Claude</span>
+        <span class="chip active" data-val="Perplexity">Perplexity</span>
+        <span class="chip" data-val="Copilot">Copilot</span>
+        <span class="chip" data-val="You.com">You.com</span>
+      </div>
+    </div>
+
+    <button class="analyze-btn" id="analyze-btn" onclick="analyze()">
+      <i class="ti ti-radar" aria-hidden="true"></i> Analyze visibility
+    </button>
+  </div>
+
+  <div class="error-msg" id="error-msg"></div>
+
+  <div class="loading-state" id="loading">
+    <div class="spinner"></div>
+    <div id="loading-text">Querying AI visibility signals...</div>
+  </div>
+
+  <div class="results" id="results">
+    <div class="score-row" id="score-row"></div>
+
+    <div class="card" id="platform-section">
+      <div class="section-title"><i class="ti ti-messages" aria-hidden="true"></i> How AI platforms respond</div>
+      <div id="platform-results"></div>
+    </div>
+
+    <div class="card" id="gap-section">
+      <div class="section-title"><i class="ti ti-alert-triangle" aria-hidden="true"></i> Visibility gaps detected</div>
+      <div id="gap-results"></div>
+    </div>
+
+    <div class="card" id="fix-section">
+      <div class="section-title"><i class="ti ti-tool" aria-hidden="true"></i> Fix playbook</div>
+      <div id="fix-results"></div>
+    </div>
+  </div>
+
+  <div class="built-by">Built by Sayali Patil &nbsp;·&nbsp; <a href="https://linkedin.com/in/patilksayali" style="color:var(--accent);text-decoration:none">linkedin.com/in/patilksayali</a></div>
+
+</div>
+
+<script>
+document.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => c.classList.toggle('active')));
+
+function getActivePlatforms() {
+  return [...document.querySelectorAll('.chip.active')].map(c => c.dataset.val);
+}
+
+function scoreClass(n) {
+  if (n >= 70) return 'score-high';
+  if (n >= 40) return 'score-mid';
+  return 'score-low';
+}
+function scoreLabel(n) {
+  if (n >= 70) return 'Strong';
+  if (n >= 40) return 'Partial';
+  return 'Weak';
+}
+function barColor(n) {
+  if (n >= 70) return '#1D9E75';
+  if (n >= 40) return '#BA7517';
+  return '#E24B4A';
+}
+
+const loadingMsgs = [
+  'Querying AI visibility signals...',
+  'Simulating platform responses...',
+  'Detecting citation patterns...',
+  'Scoring brand presence...',
+  'Generating fix playbook...'
+];
+
+async function analyze() {
+  const brand = document.getElementById('brand-input').value.trim();
+  const topic = document.getElementById('topic-input').value.trim();
+  const platforms = getActivePlatforms();
+
+  if (!brand || !topic) { showError('Enter a brand name and topic to analyze.'); return; }
+  if (!platforms.length) { showError('Select at least one AI platform.'); return; }
+
+  document.getElementById('error-msg').classList.remove('visible');
+  document.getElementById('results').classList.remove('visible');
+  document.getElementById('loading').classList.add('visible');
+  document.getElementById('analyze-btn').disabled = true;
+
+  let msgIdx = 0;
+  const msgTimer = setInterval(() => {
+    document.getElementById('loading-text').textContent = loadingMsgs[++msgIdx % loadingMsgs.length];
+  }, 1800);
+
+  const prompt = `You are a GEO (Generative Engine Optimization) analyst. Analyze how the brand "${brand}" appears when AI platforms are asked about "${topic}".
+
+For each of these AI platforms: ${platforms.join(', ')}, simulate what a realistic AI response would say when a user asks "What are the best ${topic}?" — focusing on whether and how ${brand} gets mentioned.
+
+Return ONLY a JSON object with this exact structure:
+{
+  "overall_score": <number 0-100>,
+  "mention_rate": <number 0-100, % of platforms that mention the brand>,
+  "citation_strength": <number 0-100>,
+  "competitor_gap": <number 0-100, how much competitors outperform, higher = worse>,
+  "platforms": [
+    {
+      "name": "<platform name>",
+      "score": <number 0-100>,
+      "mentions_brand": <true/false>,
+      "quote": "<2-3 sentence simulation of what this platform says about ${topic}, naturally including or excluding ${brand}>"
+    }
+  ],
+  "gaps": [
+    {
+      "type": "<Citation Gap | Content Gap | Authority Gap | Technical Gap>",
+      "description": "<specific gap for ${brand} in ${topic} category, 1-2 sentences>"
+    }
+  ],
+  "fixes": [
+    {
+      "title": "<short action title>",
+      "detail": "<specific tactical recommendation for ${brand} to improve visibility on ${topic} queries, 1-2 sentences>"
+    }
+  ]
+}
+
+gaps should have 3 items. fixes should have 4 items. Be realistic about brand visibility. Return only valid JSON, no other text.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    clearInterval(msgTimer);
+    const data = await res.json();
+    const text = data.content.map(b => b.text || '').join('');
+    const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
+    renderResults(parsed);
+  } catch (e) {
+    clearInterval(msgTimer);
+    showError('Analysis failed — check connection and try again.');
+  } finally {
+    document.getElementById('loading').classList.remove('visible');
+    document.getElementById('analyze-btn').disabled = false;
+  }
+}
+
+function renderResults(d) {
+  document.getElementById('score-row').innerHTML = `
+    <div class="metric"><div class="val">${Math.round(d.overall_score)}</div><div class="lbl">Overall score</div></div>
+    <div class="metric"><div class="val">${Math.round(d.mention_rate)}%</div><div class="lbl">Mention rate</div></div>
+    <div class="metric"><div class="val">${Math.round(d.citation_strength)}</div><div class="lbl">Citation strength</div></div>
+    <div class="metric"><div class="val">${Math.round(d.competitor_gap)}</div><div class="lbl">Competitor gap</div></div>
+  `;
+
+  document.getElementById('platform-results').innerHTML = d.platforms.map(p => `
+    <div class="platform-result">
+      <div class="plat-header">
+        <span class="plat-name">${p.name}</span>
+        <span class="score-badge ${scoreClass(p.score)}">${scoreLabel(p.score)} · ${Math.round(p.score)}</span>
+      </div>
+      <div class="bar-wrap">
+        <div class="bar-bg"><div class="bar-fill" style="width:${Math.round(p.score)}%;background:${barColor(p.score)}"></div></div>
+        <span class="bar-val">${Math.round(p.score)}%</span>
+      </div>
+      <div class="plat-quote">${p.quote}</div>
+    </div>
+  `).join('');
+
+  const gapStyles = {
+    'Citation Gap': 'background:var(--danger-bg);color:var(--danger)',
+    'Content Gap': 'background:var(--warning-bg);color:var(--warning)',
+    'Authority Gap': 'background:var(--accent-bg);color:var(--accent-text)',
+    'Technical Gap': 'background:var(--bg-secondary);color:var(--text-secondary)'
+  };
+  document.getElementById('gap-results').innerHTML = d.gaps.map(g => `
+    <div class="gap-item">
+      <span class="gap-tag" style="${gapStyles[g.type] || gapStyles['Technical Gap']}">${g.type}</span>
+      <span class="gap-content">${g.description}</span>
+    </div>
+  `).join('');
+
+  document.getElementById('fix-results').innerHTML = d.fixes.map((f, i) => `
+    <div class="fix-item">
+      <div class="fix-num">${i + 1}</div>
+      <div class="fix-text"><strong>${f.title}.</strong> ${f.detail}</div>
+    </div>
+  `).join('');
+
+  document.getElementById('results').classList.add('visible');
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg;
+  el.classList.add('visible');
+}
+</script>
+</body>
+</html>
